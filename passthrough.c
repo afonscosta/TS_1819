@@ -36,6 +36,9 @@
 
 #include <fuse.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <signal.h>
+#include <sys/types.h>
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -291,12 +294,64 @@ static int xmp_create(const char *path, mode_t mode,
 	return 0;
 }
 
+void sigterm_child() 
+{ 
+    printf("My DADDY has Killed me!!!\n"); 
+	exit(0);
+} 
+
+void sigterm_parent() 
+{ 
+    printf("My CHILD has Killed me!!!\n"); 
+} 
+
+
 static int xmp_open(const char *path, struct fuse_file_info *fi)
 {
 	int res;
-	char pass[10];
-	fgets(pass, sizeof(pass), stdin);
-	if (strcmp(pass,"1234\n") == 0) {
+	//char pass[10];
+	char *pass = NULL;  /* forces getline to allocate with malloc */
+	size_t len = 0;     /* ignored when line = NULL */
+	ssize_t read;
+
+	int pid1, pid2; 
+
+    /* get child process */
+    if ((pid1 = fork()) < 0) { 
+        perror("fork"); 
+		return -errno;
+    } 
+
+    if (pid1 == 0) { /* child */
+		int parent = getppid();
+        printf("\nPID1: father pid = %d\n\n", parent); 
+		while ((read = getline(&pass, &len, stdin)) <= 0);
+        printf("\nCHILD: sending SIGTERM\n\n"); 
+        kill(parent, SIGTERM);
+    } 
+    else /* parent */
+    { /* pid hold id of child */
+		if ((pid2 = fork()) < 0) { 
+			perror("fork"); 
+			return -errno;
+		} 
+		if (pid2 == 0) { /* child */
+			int parent = getppid();
+			printf("\nPID1: father pid = %d\n\n", parent); 
+			sleep(10);
+			printf("\nCHILD: sending SIGTERM\n\n"); 
+			kill(parent, SIGTERM);
+		} 
+		else {
+			signal(SIGTERM, sigterm_parent); 
+			pause();
+			printf("\nPARENT: sending SIGTERM \n\n");
+			kill(pid1, SIGKILL); 
+			kill(pid2, SIGKILL); 
+		}
+    } 
+
+	if (pass != NULL && strcmp(pass,"1234\n") == 0) {
 		res = open(path, fi->flags);
 		if (res == -1)
 			return -errno;

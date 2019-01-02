@@ -1,2 +1,2 @@
 #! /bin/bash
-./passthrough -f mnt/
+./passthrough -o auto_unmount -f mnt/
