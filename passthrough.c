@@ -34,6 +34,8 @@
 #define _XOPEN_SOURCE 700
 #endif
 
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <fuse.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -294,71 +296,72 @@ static int xmp_create(const char *path, mode_t mode,
 	return 0;
 }
 
-void sigterm_child() 
-{ 
-    printf("My DADDY has Killed me!!!\n"); 
-	exit(0);
-} 
 
-void sigterm_parent() 
-{ 
-    printf("My CHILD has Killed me!!!\n"); 
-} 
+//https://stackoverflow.com/questions/7226603/timeout-function
+void timed_reader(char pass[], int size, int t) {
+    fd_set          input_set;
+    struct timeval  timeout;
+    int             ready_for_reading = 0;
 
+    /* Empty the FD Set */
+    FD_ZERO(&input_set );
+    /* Listen to the input descriptor */
+    FD_SET(0, &input_set);
+
+    /* Waiting for some seconds */
+    timeout.tv_sec = t;    // WAIT seconds
+    timeout.tv_usec = 0;    // 0 milliseconds
+
+    /* Invitation for the user to write something */
+    printf("Enter password (%d seconds): \n", t);
+
+    /* Listening for input stream for any activity */
+    ready_for_reading = select(1, &input_set, NULL, NULL, &timeout);
+    /* Here, first parameter is number of FDs in the set, 
+     * second is our FD set for reading,
+     * third is the FD set in which any write activity needs to updated,
+     * which is not required in this case. 
+     * Fourth is timeout
+     */
+
+    if (ready_for_reading == -1) {
+        /* Some error has occured in input */
+        fprintf(stderr, "Unable to read your input\n");
+        pass = NULL;
+    } 
+
+    if (ready_for_reading) {
+		if (fgets(pass, size, stdin) == NULL) {
+			// No more to read or IO error
+			pass = NULL;
+	    }
+		if (pass[strlen(pass)] == '\0' && pass[strlen(pass) - 1] != '\n') {
+			// Cope with potential extra data in `stdin`: read and toss
+			int ch;
+			while ((ch = fgetc(stdin)) != '\n' && ch != EOF);
+        }
+    } else {
+        printf("%d Seconds are over - no data input \n", t);
+    }
+}
 
 static int xmp_open(const char *path, struct fuse_file_info *fi)
 {
 	int res;
-	//char pass[10];
-	char *pass = NULL;  /* forces getline to allocate with malloc */
-	size_t len = 0;     /* ignored when line = NULL */
-	ssize_t read;
+	int pass_size = 20;
+	char* pass = malloc(sizeof(char)*pass_size);
 
-	int pid1, pid2; 
-
-    /* get child process */
-    if ((pid1 = fork()) < 0) { 
-        perror("fork"); 
-		return -errno;
-    } 
-
-    if (pid1 == 0) { /* child */
-		int parent = getppid();
-        printf("\nPID1: father pid = %d\n\n", parent); 
-		while ((read = getline(&pass, &len, stdin)) <= 0);
-        printf("\nCHILD: sending SIGTERM\n\n"); 
-        kill(parent, SIGTERM);
-    } 
-    else /* parent */
-    { /* pid hold id of child */
-		if ((pid2 = fork()) < 0) { 
-			perror("fork"); 
-			return -errno;
-		} 
-		if (pid2 == 0) { /* child */
-			int parent = getppid();
-			printf("\nPID1: father pid = %d\n\n", parent); 
-			sleep(10);
-			printf("\nCHILD: sending SIGTERM\n\n"); 
-			kill(parent, SIGTERM);
-		} 
-		else {
-			signal(SIGTERM, sigterm_parent); 
-			pause();
-			printf("\nPARENT: sending SIGTERM \n\n");
-			kill(pid1, SIGKILL); 
-			kill(pid2, SIGKILL); 
-		}
-    } 
+	timed_reader(pass, pass_size, 30);
 
 	if (pass != NULL && strcmp(pass,"1234\n") == 0) {
+		free(pass);
 		res = open(path, fi->flags);
 		if (res == -1)
 			return -errno;
-
 		fi->fh = res;
 		return 0;
 	}
+	free(pass);
 	return -EACCES;
 }
 
