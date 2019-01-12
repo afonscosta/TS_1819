@@ -1,8 +1,22 @@
 import os
 import re
-from flask import Flask, flash, redirect, render_template, request, session, abort, send_file, url_for
+from flask import Flask, flash, redirect, render_template, request, session, abort, send_file, url_for, make_response
+from functools import wraps, update_wrapper
+from datetime import datetime
 
 app = Flask(__name__)
+
+def nocache(view):
+    @wraps(view)
+    def no_cache(*args, **kwargs):
+        response = make_response(view(*args, **kwargs))
+        response.headers['Last-Modified'] = datetime.now()
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '-1'
+        return response
+    return update_wrapper(no_cache, view)
+
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
@@ -14,7 +28,7 @@ def home():
         if 'start' in request.form:
             return dir_listing('')
     return render_template('home.html')
-    # return home()
+
 
 @app.route('/login', methods=['POST'])
 def do_admin_login():
@@ -31,14 +45,10 @@ def logout():
     session['logged_in'] = False
     return redirect('/')
 
-@app.route('/filesystem')
-def fs():
-    if not session.get('logged_in'):
-        return render_template('login.html')
-    return dir_listing('')#render_template('filemanager.html')
 
 @app.route('/', defaults={'req_path': ''})
 @app.route('/<path:req_path>')
+@nocache
 def dir_listing(req_path):
     base_dir = os.environ['HOME']
 
@@ -53,7 +63,6 @@ def dir_listing(req_path):
     if os.path.isfile(abs_path):
         return send_file(abs_path)
 
-    print('entrou')
     full_path = []
     # Show directory contents
     files = os.listdir(abs_path)
