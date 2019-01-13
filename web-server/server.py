@@ -1,6 +1,12 @@
 import os
 import re
-from flask import Flask, flash, redirect, render_template, request, session, abort, send_file, url_for, make_response
+import xattr
+import string
+import random
+import smtplib, ssl
+import subprocess
+from random import randrange
+from flask import Flask, flash, redirect, render_template, request, session, abort, send_file, url_for, make_response, send_from_directory
 from functools import wraps, update_wrapper
 from datetime import datetime
 
@@ -45,6 +51,22 @@ def logout():
     session['logged_in'] = False
     return redirect('/')
 
+def send_email(pw):
+    port = 587  # For starttls
+    smtp_server = "smtp.gmail.com"
+    sender_email = "ts.1819.teste@gmail.com"
+    to_addrs = "" #<-------------------------------------------------------------------- INSERIR EMAIL DO RECETOR
+    password = "tecseg1819"
+    message = 'To: {}\r\nSubject: {}\r\n\r\n{}'.format(to_addrs, 'Password do ficheiro', pw)
+
+    context = ssl.create_default_context()
+    with smtplib.SMTP(smtp_server, port) as server:
+        server.ehlo()  # Can be omitted
+        server.starttls(context=context)
+        server.ehlo()  # Can be omitted
+        server.login(sender_email, password)
+        server.sendmail(sender_email, [to_addrs], message)
+
 
 @app.route('/', defaults={'req_path': ''})
 @app.route('/<path:req_path>')
@@ -61,7 +83,20 @@ def dir_listing(req_path):
 
     # Check if path is a file and serve
     if os.path.isfile(abs_path):
-        return send_file(abs_path)
+        try:
+            n = randrange(10, 21)
+            newpass = ''.join(random.SystemRandom().choice(string.ascii_lowercase + string.ascii_uppercase + string.digits) for _ in range(n))
+            print(newpass)
+            send_email(newpass)
+            xattr.set(abs_path, 'user.pass', newpass + '\0')
+            print(xattr.get(abs_path, 'user.pass'))
+            prefix_path = re.split(r'(?<![/:])/', request.referrer)[:1][0]
+            req_path = "/".join(re.split(r'(?<![\\])/', req_path)[:-1])
+            return render_template('pass.html', path=prefix_path + '/' + req_path)#pass_check(abs_path)
+        except PermissionError:
+            req_path = "/".join(re.split(r'(?<![\\])/', req_path)[:-1])
+            abs_path = os.path.join(base_dir, req_path + '/')
+            return redirect(req_path)
 
     full_path = []
     # Show directory contents
@@ -71,6 +106,31 @@ def dir_listing(req_path):
         full_path.append((path[0] + '/', f))
 
     return render_template('files.html', files=full_path)
+
+@app.route('/pass', methods=['GET', 'POST'])
+def pass_check():
+    base_dir = os.environ['HOME']
+    prefix_path = re.split(r'(?<![\\])/', request.referrer)[:1][0]
+    req_path = '/'.join(re.split(r'/', request.referrer)[3:])
+    abs_path = base_dir + '/' + req_path
+
+    try:
+        if request.method == 'POST':
+            if not request.form['password']:
+                aux = re.split(r'/', req_path)[:-1]
+                req_path = '/'.join(aux)
+                return render_template('pass.html', path=prefix_path + req_path)
+            xattr.set(abs_path, 'user.try', request.form['password'] + '\0')
+            print(xattr.get(abs_path, 'user.try'))
+            return send_file(abs_path)
+    except PermissionError:
+        aux = re.split(r'/', req_path)[:-1]
+        req_path = '/'.join(aux)
+        return redirect(req_path)
+
+    aux = re.split(r'/', req_path)[:-1]
+    req_path = '/'.join(aux)
+    return render_template('pass.html', path=prefix_path + req_path)
 
 if __name__ == "__main__":
     app.secret_key = os.urandom(12)

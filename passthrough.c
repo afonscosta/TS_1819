@@ -23,6 +23,7 @@
  */
 
 
+#define HAVE_SETXATTR
 #define FUSE_USE_VERSION 31
 
 #ifdef HAVE_CONFIG_H
@@ -345,23 +346,32 @@ void timed_reader(char pass[], int size, int t) {
     }
 }
 
+ 
 static int xmp_open(const char *path, struct fuse_file_info *fi)
 {
 	int res;
-	int pass_size = 20;
-	char* pass = malloc(sizeof(char)*pass_size);
+	int pass_size = 1000;
+	char pass[pass_size];
+	char try[pass_size];
+    ssize_t valueLen;
+	
+	valueLen = getxattr(path, "user.pass", pass, pass_size);
+	if (valueLen == -1)
+		return -EACCES;
 
-	timed_reader(pass, pass_size, 30);
+	valueLen = getxattr(path, "user.try", try, pass_size);
+	if (valueLen == -1)
+		return -EACCES;
 
-	if (pass != NULL && strcmp(pass,"1234\n") == 0) {
-		free(pass);
+	//timed_reader(pass, pass_size, 30);
+
+	if (pass != NULL && try != NULL && strcmp(pass, try) == 0) {
 		res = open(path, fi->flags);
 		if (res == -1)
 			return -errno;
 		fi->fh = res;
 		return 0;
 	}
-	free(pass);
 	return -EACCES;
 }
 
@@ -442,6 +452,7 @@ static int xmp_fsync(const char *path, int isdatasync,
 	return 0;
 }
 
+
 #ifdef HAVE_POSIX_FALLOCATE
 static int xmp_fallocate(const char *path, int mode,
 			off_t offset, off_t length, struct fuse_file_info *fi)
@@ -508,7 +519,7 @@ static int xmp_removexattr(const char *path, const char *name)
 #endif /* HAVE_SETXATTR */
 
 static struct fuse_operations xmp_oper = {
-	.init           = xmp_init,
+	.init       = xmp_init,
 	.getattr	= xmp_getattr,
 	.access		= xmp_access,
 	.readlink	= xmp_readlink,

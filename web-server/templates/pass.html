@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="/static/style.css" type="text/css">
+{% block body %}
+
+<script>    
+	window.setTimeout(function(){
+        // Move to a new location or you can do something else
+		window.location.href="{{ path }}";
+	}, 30000)
+ </script>
+
+<form action="/pass" method="POST">
+	<div class="login">
+		<div class="login-screen">
+			<div class="app-title">
+				<h1>Pass</h1>
+			</div>
+			<div class="login-form">
+				<div class="control-group">
+					<h2>FILENAME</h2>
+				</div>
+				<div class="control-group">
+					<input type="password" class="login-field" value="" placeholder="password" name="password">
+					<label class="login-field-icon fui-lock" for="login-pass"></label>
+				</div>
+				<input type="submit" value="Submeter" class="btn btn-primary btn-large btn-block">
+			</div>
+		</div>
+	</div>
+</form>
+
+{% endblock %}
