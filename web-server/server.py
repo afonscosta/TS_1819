@@ -37,13 +37,26 @@ def home():
 
 
 @app.route('/login', methods=['POST'])
-def do_admin_login():
-    if request.form['password'] == 'p' and request.form['username'] == 'a':
+def do_login():
+    if request.form['username']:
         session['logged_in'] = True
+        session['user'] = request.form['username']
         return redirect('/')
     else:
         flash('wrong password!')
     return render_template('login.html')
+
+
+@app.route('/register', methods=['GET', 'POST'])
+def do_register():
+    if 'username' in request.form:
+        fd = open("database.txt", "a")
+        fd.write(request.form['username'] + '::' + request.form['email'])
+        fd.close()
+        return redirect('/')
+    else:
+        flash('wrong password!')
+    return render_template('register.html')
 
 
 @app.route("/logout")
@@ -52,10 +65,17 @@ def logout():
     return redirect('/')
 
 def send_email(pw):
+
+    with open("database.txt") as fd:
+        for line in fd:
+            info = re.split(r'::', line)
+            if session['user'] == info[0]:
+                to_addrs = info[1]
+                break
+
     port = 587  # For starttls
     smtp_server = "smtp.gmail.com"
     sender_email = "ts.1819.teste@gmail.com"
-    to_addrs = "" #<-------------------------------------------------------------------- INSERIR EMAIL DO RECETOR
     password = "tecseg1819"
     message = 'To: {}\r\nSubject: {}\r\n\r\n{}'.format(to_addrs, 'Password do ficheiro', pw)
 
@@ -86,10 +106,8 @@ def dir_listing(req_path):
         try:
             n = randrange(10, 21)
             newpass = ''.join(random.SystemRandom().choice(string.ascii_lowercase + string.ascii_uppercase + string.digits) for _ in range(n))
-            print(newpass)
             send_email(newpass)
             xattr.set(abs_path, 'user.pass', newpass + '\0')
-            print(xattr.get(abs_path, 'user.pass'))
             prefix_path = re.split(r'(?<![/:])/', request.referrer)[:1][0]
             req_path = "/".join(re.split(r'(?<![\\])/', req_path)[:-1])
             return render_template('pass.html', path=prefix_path + '/' + req_path)#pass_check(abs_path)
@@ -121,7 +139,6 @@ def pass_check():
                 req_path = '/'.join(aux)
                 return render_template('pass.html', path=prefix_path + req_path)
             xattr.set(abs_path, 'user.try', request.form['password'] + '\0')
-            print(xattr.get(abs_path, 'user.try'))
             return send_file(abs_path)
     except PermissionError:
         aux = re.split(r'/', req_path)[:-1]

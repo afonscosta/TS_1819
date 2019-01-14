@@ -6,7 +6,7 @@ You're logged in already!
  
 {% else %}
  
-<form action="/login" method="POST">
+<form action="/register" method="POST">
 <div class="login">
 <div class="login-screen">
 <div class="app-title">
@@ -16,12 +16,13 @@ You're logged in already!
 <div class="control-group">
 				<input type="text" class="login-field" value="" placeholder="username" name="username">
 <label class="login-field-icon fui-user" for="login-name"></label></div>
+<div class="control-group">
+				<input type="email" class="login-field" value="" placeholder="email" name="email">
+<label class="login-field-icon fui-lock" for="login-pass"></label></div>
 <input type="submit" value="Log in" class="btn btn-primary btn-large btn-block">
+ 
 </div>
-<button type="button" class="btn btn-primary btn-large btn-block" onclick="window.location.href='{{ url_for( 'do_register') }}';">Register</button>
 </div>
 </div>
-</form>
-
-{% endif %}
+</form>{% endif %}
 {% endblock %}
