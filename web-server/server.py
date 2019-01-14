@@ -39,9 +39,14 @@ def home():
 @app.route('/login', methods=['POST'])
 def do_login():
     if request.form['username']:
-        session['logged_in'] = True
-        session['user'] = request.form['username']
-        return redirect('/')
+        with open("database.txt") as fd:
+            for line in fd:
+                info = re.split(r'::', line)
+                if request.form['username'] == info[0]:
+                    session['logged_in'] = True
+                    session['user'] = request.form['username']
+                    return redirect('/')
+            flash('username not found!')
     else:
         flash('wrong password!')
     return render_template('login.html')
@@ -51,7 +56,7 @@ def do_login():
 def do_register():
     if 'username' in request.form:
         fd = open("database.txt", "a")
-        fd.write(request.form['username'] + '::' + request.form['email'])
+        fd.write(request.form['username'] + '::' + request.form['email'] + '\n')
         fd.close()
         return redirect('/')
     else:
@@ -77,7 +82,7 @@ def send_email(pw):
     smtp_server = "smtp.gmail.com"
     sender_email = "ts.1819.teste@gmail.com"
     password = "tecseg1819"
-    message = 'To: {}\r\nSubject: {}\r\n\r\n{}'.format(to_addrs, 'Password do ficheiro', pw)
+    message = 'To: {}\r\nSubject: {}\r\n\r\n{}'.format(to_addrs.rstrip(), 'Password do ficheiro', pw)
 
     context = ssl.create_default_context()
     with smtplib.SMTP(smtp_server, port) as server:
