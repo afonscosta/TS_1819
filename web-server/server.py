@@ -44,15 +44,13 @@ def do_login():
             uid = pwd.getpwnam(request.form['username']).pw_uid
             with open("database.txt", "r+") as fd:
                 for line in fd:
-                    info = re.split(r'::', line)
-                    print(int(info[0]))
+                    info = re.split(r'::', line)                    
                     if uid == int(info[0]):
                         session['logged_in'] = True
                         session['user'] = str(uid)
                         return redirect('/')
-                    print("saiu")
                 flash('username not found!')
-        except FileNotFoundError:
+        except (FileNotFoundError, KeyError):
             flash('username not found!')
     else:
         flash('wrong password!')
@@ -62,10 +60,13 @@ def do_login():
 @app.route('/register', methods=['GET', 'POST'])
 def do_register():
     if 'username' in request.form:
-        with open("database.txt", "a+") as fd:
+        try:
             uid = str(pwd.getpwnam(request.form['username']).pw_uid)
-            fd.write(uid + '::' + request.form['email'] + '\n')
-        return redirect('/')
+            with open("database.txt", "a+") as fd:
+                fd.write(uid + '::' + request.form['email'] + '\n')
+            return redirect('/')
+        except KeyError:
+            flash('username not found!')
     else:
         flash('wrong password!')
     return render_template('register.html')
@@ -118,8 +119,8 @@ def dir_listing(req_path):
         try:
             n = randrange(10, 21)
             newpass = ''.join(random.SystemRandom().choice(string.ascii_lowercase + string.ascii_uppercase + string.digits) for _ in range(n))
-            send_email(newpass)
-            xattr.set(abs_path, 'uid.pass', newpass + '\0')
+            send_email(newpass) 
+            xattr.set(abs_path, 'user.' + session['user'] + '.pass', newpass + '\0')
             prefix_path = re.split(r'(?<![/:])/', request.referrer)[:1][0]
             req_path = "/".join(re.split(r'(?<![\\])/', req_path)[:-1])
             return render_template('pass.html', path=prefix_path + '/' + req_path)#pass_check(abs_path)
@@ -150,7 +151,7 @@ def pass_check():
                 aux = re.split(r'/', req_path)[:-1]
                 req_path = '/'.join(aux)
                 return render_template('pass.html', path=prefix_path + req_path)
-            xattr.set(abs_path, 'uid.try', request.form['password'] + '\0')
+            xattr.set(abs_path, 'user.' + session['user'] + '.try', request.form['password'] + '\0')
             return send_file(abs_path)
     except PermissionError:
         aux = re.split(r'/', req_path)[:-1]
