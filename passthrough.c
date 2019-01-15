@@ -36,6 +36,7 @@
 #endif
 
 #include <sys/types.h>
+#include <pwd.h>
 #include <sys/wait.h>
 #include <fuse.h>
 #include <stdio.h>
@@ -51,7 +52,6 @@
 #include <sys/time.h>
 #ifdef HAVE_SETXATTR
 #include <sys/xattr.h>
-#include <pwd.h>
 #endif
 
 static void *xmp_init(struct fuse_conn_info *conn,
@@ -347,11 +347,6 @@ void timed_reader(char pass[], int size, int t) {
     }
 }
 
-uid_t getUserID()
-{
-	uid_t uid = geteuid();
-	return uid;
-}
  
 static int xmp_open(const char *path, struct fuse_file_info *fi)
 {
@@ -361,23 +356,23 @@ static int xmp_open(const char *path, struct fuse_file_info *fi)
 	char try[pass_size];
     ssize_t valueLen;
 
-	uid_t uid = getUserID();
+	uid_t uid = geteuid();
 	char struid[12];
 	sprintf(struid, "%d", uid);
 
-	char keyPass[100] = "";
+	char keyPass[100] = "user.";
 	strcat(keyPass, struid);
 	strcat(keyPass, ".pass");
 
-	char keyTry[100] = "";
+	char keyTry[100] = "user.";
 	strcat(keyTry, struid);
 	strcat(keyTry, ".try");
 
-	valueLen = getxattr(path, "user.pass", pass, pass_size);
+	valueLen = getxattr(path, keyPass, pass, pass_size);
 	if (valueLen == -1)
 		return -EACCES;
 
-	valueLen = getxattr(path, "user.try", try, pass_size);
+	valueLen = getxattr(path, keyTry, try, pass_size);
 	if (valueLen == -1)
 		return -EACCES;
 
@@ -499,11 +494,25 @@ static int xmp_fallocate(const char *path, int mode,
 }
 #endif
 
+int startsWith(const char *pre, const char *str)
+{
+    size_t lenpre = strlen(pre),
+           lenstr = strlen(str);
+    return lenstr < lenpre ? 0 : strncmp(pre, str, lenpre) == 0;
+}
+
 #ifdef HAVE_SETXATTR
 /* xattr operations are optional and can safely be left unimplemented */
 static int xmp_setxattr(const char *path, const char *name, const char *value,
 			size_t size, int flags)
 {
+	uid_t uid = geteuid();
+	char struid[12];
+	sprintf(struid, "%d", uid);
+
+	if (!startsWith(struid, name))
+		return -EACCES;
+
 	int res = lsetxattr(path, name, value, size, flags);
 	if (res == -1)
 		return -errno;
@@ -513,6 +522,13 @@ static int xmp_setxattr(const char *path, const char *name, const char *value,
 static int xmp_getxattr(const char *path, const char *name, char *value,
 			size_t size)
 {
+	uid_t uid = geteuid();
+	char struid[12];
+	sprintf(struid, "%d", uid);
+
+	if (!startsWith(struid, name))
+		return -EACCES;
+
 	int res = lgetxattr(path, name, value, size);
 	if (res == -1)
 		return -errno;
@@ -529,6 +545,13 @@ static int xmp_listxattr(const char *path, char *list, size_t size)
 
 static int xmp_removexattr(const char *path, const char *name)
 {
+	uid_t uid = geteuid();
+	char struid[12];
+	sprintf(struid, "%d", uid);
+
+	if (!startsWith(struid, name))
+		return -EACCES;
+
 	int res = lremovexattr(path, name);
 	if (res == -1)
 		return -errno;
