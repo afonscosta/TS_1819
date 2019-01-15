@@ -39,13 +39,16 @@ def home():
 @app.route('/login', methods=['POST'])
 def do_login():
     if request.form['username']:
-        with open("database.txt", "a+") as fd:
-            for line in fd:
-                info = re.split(r'::', line)
-                if request.form['username'] == info[0]:
-                    session['logged_in'] = True
-                    session['user'] = request.form['username']
-                    return redirect('/')
+        try :
+            with open("database.txt", "r+") as fd:
+                for line in fd:
+                    info = re.split(r'::', line)
+                    if request.form['username'] == info[0]:
+                        session['logged_in'] = True
+                        session['user'] = request.form['username']
+                        return redirect('/')
+                flash('username not found!')
+        except FileNotFoundError as e:
             flash('username not found!')
     else:
         flash('wrong password!')
