@@ -39,7 +39,7 @@ def home():
 @app.route('/login', methods=['POST'])
 def do_login():
     if request.form['username']:
-        with open("database.txt") as fd:
+        with open("database.txt", "a+") as fd:
             for line in fd:
                 info = re.split(r'::', line)
                 if request.form['username'] == info[0]:
@@ -55,9 +55,8 @@ def do_login():
 @app.route('/register', methods=['GET', 'POST'])
 def do_register():
     if 'username' in request.form:
-        fd = open("database.txt", "a")
-        fd.write(request.form['username'] + '::' + request.form['email'] + '\n')
-        fd.close()
+        with open("database.txt", "a+") as fd:
+            fd.write(request.form['username'] + '::' + request.form['email'] + '\n')
         return redirect('/')
     else:
         flash('wrong password!')
