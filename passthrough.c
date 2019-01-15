@@ -51,6 +51,7 @@
 #include <sys/time.h>
 #ifdef HAVE_SETXATTR
 #include <sys/xattr.h>
+#include <pwd.h>
 #endif
 
 static void *xmp_init(struct fuse_conn_info *conn,
@@ -346,6 +347,11 @@ void timed_reader(char pass[], int size, int t) {
     }
 }
 
+uid_t getUserID()
+{
+	uid_t uid = geteuid();
+	return uid;
+}
  
 static int xmp_open(const char *path, struct fuse_file_info *fi)
 {
@@ -354,7 +360,19 @@ static int xmp_open(const char *path, struct fuse_file_info *fi)
 	char pass[pass_size];
 	char try[pass_size];
     ssize_t valueLen;
-	
+
+	uid_t uid = getUserID();
+	char struid[12];
+	sprintf(struid, "%d", uid);
+
+	char keyPass[100] = "";
+	strcat(keyPass, struid);
+	strcat(keyPass, ".pass");
+
+	char keyTry[100] = "";
+	strcat(keyTry, struid);
+	strcat(keyTry, ".try");
+
 	valueLen = getxattr(path, "user.pass", pass, pass_size);
 	if (valueLen == -1)
 		return -EACCES;
