@@ -29,7 +29,7 @@ def home():
 def do_login():
     if request.form['username']:
         try :
-            with open("/home/afonscosta/Documents/TS_1819/database.txt", "r") as fd:
+            with open(os.getenv("HOME") + "/.database.txt", "r") as fd:
                 for line in fd:
                     info = re.split(r'::', line)
                     if request.form['username'] == info[0]:
@@ -45,7 +45,7 @@ def do_login():
 def do_register():
     if 'username' in request.form:
         try:
-            with open("/home/afonscosta/Documents/TS_1819/database.txt", "a+") as fd:
+            with open(os.getenv("HOME") + "/.database.txt", "a+") as fd:
                 fd.write(request.form['username'] + '::' + request.form['email'] + '\n')
             return redirect('/')
         except KeyError:

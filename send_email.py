@@ -2,6 +2,7 @@
 
 import smtplib, ssl
 import re
+import os
 import string
 import sys
 import random
@@ -23,7 +24,8 @@ def send_email(pw, to_addrs):
         server.sendmail(sender_email, [to_addrs], message)
 
 
-with open("/home/afonscosta/Documents/TS_1819/database.txt") as fd:
+
+with open(os.getenv("HOME") + "/.database.txt") as fd:
     for line in fd:
         info = re.split(r'::', line)
         if sys.argv[1] == info[0]:

@@ -11,3 +11,4 @@ cp send_email.py $HOME/.send_email.py
 rm -r $HOME/.web-server-login
 rm -r $HOME/.web-server-pass
 rm $HOME/.send_email.py
+rm $HOME/.database.txt
