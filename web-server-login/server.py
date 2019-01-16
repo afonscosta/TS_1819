@@ -35,7 +35,7 @@ def do_login():
                     if request.form['username'] == info[0]:
                         print(info[0])
                         shutdown_server()
-                        #return redirect('/')
+                        return redirect('/')
         except (FileNotFoundError, KeyError):
             pass
     return render_template('login.html')

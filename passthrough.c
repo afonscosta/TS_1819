@@ -36,7 +36,6 @@
 #endif
 
 #include <sys/types.h>
-#include <pwd.h>
 #include <sys/wait.h>
 #include <fuse.h>
 #include <stdio.h>
@@ -298,65 +297,22 @@ static int xmp_create(const char *path, mode_t mode,
 	return 0;
 }
 
-
-//https://stackoverflow.com/questions/7226603/timeout-function
-void timed_reader(char pass[], int size, int t) {
-    fd_set          input_set;
-    struct timeval  timeout;
-    int             ready_for_reading = 0;
-
-    /* Empty the FD Set */
-    FD_ZERO(&input_set );
-    /* Listen to the input descriptor */
-    FD_SET(0, &input_set);
-
-    /* Waiting for some seconds */
-    timeout.tv_sec = t;    // WAIT seconds
-    timeout.tv_usec = 0;    // 0 milliseconds
-
-    /* Invitation for the user to write something */
-    printf("Enter password (%d seconds): \n", t);
-
-    /* Listening for input stream for any activity */
-    ready_for_reading = select(1, &input_set, NULL, NULL, &timeout);
-    /* Here, first parameter is number of FDs in the set, 
-     * second is our FD set for reading,
-     * third is the FD set in which any write activity needs to updated,
-     * which is not required in this case. 
-     * Fourth is timeout
-     */
-
-    if (ready_for_reading == -1) {
-        /* Some error has occured in input */
-        fprintf(stderr, "Unable to read your input\n");
-        pass = NULL;
-    } 
-
-    if (ready_for_reading) {
-		if (fgets(pass, size, stdin) == NULL) {
-			// No more to read or IO error
-			pass = NULL;
-	    }
-		if (pass[strlen(pass)] == '\0' && pass[strlen(pass) - 1] != '\n') {
-			// Cope with potential extra data in `stdin`: read and toss
-			int ch;
-			while ((ch = fgetc(stdin)) != '\n' && ch != EOF);
-        }
-    } else {
-        printf("%d Seconds are over - no data input \n", t);
-    }
-}
-
  
 static int xmp_open(const char *path, struct fuse_file_info *fi)
 {
-	//timed_reader(pass, pass_size, 30);
 	int res;
 	int pass_size = 1000;
+	char cmd[1000];
+	char username[1000] = "";
+	char pass[1000] = "";
+	char try[1000] = "";
+	char *homedir = getenv("HOME");
 
 	//login
-	char username[1000] = "";
-	FILE *fp = popen("cd /home/afonscosta/Documents/TS_1819/new-web-server/; flask run 2> /dev/null", "r");
+	strcpy(cmd, "cd ");
+	strcat(cmd, homedir);
+	strcat(cmd, "/.web-server-login; flask run 2> /dev/null");
+	FILE *fp = popen(cmd, "r");
 	while (fgets(username, pass_size, fp) != NULL) {
 		if (username[1] != '*') {
 			break;
@@ -364,15 +320,17 @@ static int xmp_open(const char *path, struct fuse_file_info *fi)
 	}
 
 	//mandar mail
-	char pass[1000] = "";
-	char command[1000] = "/home/afonscosta/Documents/TS_1819/web-server/send_email.py ";
-	strcat(command, username);
-	fp = popen(command, "r");
+	strcpy(cmd, homedir);
+	strcat(cmd, "/.send_email.py ");
+	strcat(cmd, username);
+	fp = popen(cmd, "r");
 	fgets(pass, pass_size, fp);
 
 	//ligar servidor
-	char try[1000] = "";
-	fp = popen("cd /home/afonscosta/Documents/TS_1819/web-server/; flask run 2> /dev/null", "r");
+	strcpy(cmd, "cd ");
+	strcat(cmd, homedir);
+	strcat(cmd, "/.web-server-pass; flask run 2> /dev/null");
+	fp = popen(cmd, "r");
 	while (fgets(try, pass_size, fp) != NULL) {
 		if (try[1] != '*') {
 			break;
