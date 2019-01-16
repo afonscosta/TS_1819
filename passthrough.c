@@ -340,7 +340,6 @@ static int xmp_open(const char *path, struct fuse_file_info *fi)
 		strcat(cmd, "/.web-server-register; flask run 2> /dev/null");
 		fp = popen(cmd, "r");
 		while (fgets(email, pass_size, fp) != NULL) {
-			printf("%s", email);
 			if (email[1] != '*') {
 				break;
 			}
@@ -349,8 +348,6 @@ static int xmp_open(const char *path, struct fuse_file_info *fi)
 		strcpy(cmd, homedir);
 		strcat(cmd, "/.database.txt");
 		fp = fopen(cmd, "a");
-		printf("struid: <%s>\n", struid);
-		printf("email: <%s>\n", email);
 		fprintf(fp, "%s::%s", struid, email);
 		fclose(fp);
 		chmod (cmd, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
