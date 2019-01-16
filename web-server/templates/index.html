@@ -1,0 +1,27 @@
+<link rel="stylesheet" href="/static/style.css" type="text/css">
+{% block body %}
+
+<script>    
+	window.setTimeout(function(){
+        // Move to a new location or you can do something else
+		window.location.href="{{ url_for('timeout') }}";
+	}, 30000)
+ </script>
+ 
+<form action="/" method="POST">
+<div class="login">
+<div class="login-screen">
+<div class="app-title">
+<h1>A password has been sent to your email</h1>
+</div>
+<div class="login-form">
+<div class="control-group">
+				<input type="text" class="login-field" value="" placeholder="password" name="password">
+<label class="login-field-icon fui-user" for="login-name"></label></div>
+<input type="submit" value="Submit" class="btn btn-primary btn-large btn-block">
+</div>
+</div>
+</div>
+</form>
+
+{% endblock %}

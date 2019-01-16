@@ -350,33 +350,32 @@ void timed_reader(char pass[], int size, int t) {
  
 static int xmp_open(const char *path, struct fuse_file_info *fi)
 {
+	//timed_reader(pass, pass_size, 30);
 	int res;
 	int pass_size = 1000;
-	char pass[pass_size];
-	char try[pass_size];
-    ssize_t valueLen;
 
-	uid_t uid = geteuid();
-	char struid[12];
-	sprintf(struid, "%d", uid);
+	char username[1000] = "";
+	FILE *fp = popen("cd /home/afonscosta/Documents/TS_1819/new-web-server/; flask run 2> /dev/null", "r");
+	while (fgets(username, pass_size, fp) != NULL) {
+		if (username[1] != '*') {
+			break;
+		}
+	}
 
-	char keyPass[100] = "user.";
-	strcat(keyPass, struid);
-	strcat(keyPass, ".pass");
+	//mandar mail
+	char pass[1000] = "";
+	fp = popen("/home/afonscosta/Documents/TS_1819/web-server/send_email.py afonscosta", "r");
+	fgets(pass, pass_size, fp);
 
-	char keyTry[100] = "user.";
-	strcat(keyTry, struid);
-	strcat(keyTry, ".try");
-
-	valueLen = getxattr(path, keyPass, pass, pass_size);
-	if (valueLen == -1)
-		return -EACCES;
-
-	valueLen = getxattr(path, keyTry, try, pass_size);
-	if (valueLen == -1)
-		return -EACCES;
-
-	//timed_reader(pass, pass_size, 30);
+	//ligar servidor
+	char try[1000] = "";
+	fp = popen("cd /home/afonscosta/Documents/TS_1819/web-server/; flask run 2> /dev/null", "r");
+	while (fgets(try, pass_size, fp) != NULL) {
+		if (try[1] != '*') {
+			break;
+		}
+	}
+	fclose(fp);
 
 	if (pass != NULL && try != NULL && strcmp(pass, try) == 0) {
 		res = open(path, fi->flags);
@@ -506,13 +505,6 @@ int startsWith(const char *pre, const char *str)
 static int xmp_setxattr(const char *path, const char *name, const char *value,
 			size_t size, int flags)
 {
-	uid_t uid = geteuid();
-	char struid[12];
-	sprintf(struid, "%d", uid);
-
-	if (!startsWith(struid, name))
-		return -EACCES;
-
 	int res = lsetxattr(path, name, value, size, flags);
 	if (res == -1)
 		return -errno;
@@ -522,13 +514,6 @@ static int xmp_setxattr(const char *path, const char *name, const char *value,
 static int xmp_getxattr(const char *path, const char *name, char *value,
 			size_t size)
 {
-	uid_t uid = geteuid();
-	char struid[12];
-	sprintf(struid, "%d", uid);
-
-	if (!startsWith(struid, name))
-		return -EACCES;
-
 	int res = lgetxattr(path, name, value, size);
 	if (res == -1)
 		return -errno;
@@ -545,13 +530,6 @@ static int xmp_listxattr(const char *path, char *list, size_t size)
 
 static int xmp_removexattr(const char *path, const char *name)
 {
-	uid_t uid = geteuid();
-	char struid[12];
-	sprintf(struid, "%d", uid);
-
-	if (!startsWith(struid, name))
-		return -EACCES;
-
 	int res = lremovexattr(path, name);
 	if (res == -1)
 		return -errno;
