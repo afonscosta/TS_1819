@@ -20,6 +20,8 @@ fi
 rm -r $HOME/.web-server-register
 rm -r $HOME/.web-server-pass
 rm $HOME/.send_email.py
-cp $HOME/.database.txt .
-rm $HOME/.database.txt
+if [ -f $HOME/.database.txt ]; then
+	cp $HOME/.database.txt .
+	rm $HOME/.database.txt
+fi
 
