@@ -303,7 +303,6 @@ static int xmp_open(const char *path, struct fuse_file_info *fi)
 	int res;
 	int pass_size = 1000;
 	char cmd[1000];
-	char email[1000] = "";
 	char pass[1000] = "";
 	char try[1000] = "";
 	char line[1000] = "";
@@ -335,22 +334,7 @@ static int xmp_open(const char *path, struct fuse_file_info *fi)
 
 	//Se não estiver tem que se registar
 	if (!exists) {
-		strcpy(cmd, "cd ");
-		strcat(cmd, homedir);
-		strcat(cmd, "/.web-server-register; flask run 2> /dev/null");
-		fp = popen(cmd, "r");
-		while (fgets(email, pass_size, fp) != NULL) {
-			if (email[1] != '*') {
-				break;
-			}
-		}
-		fclose(fp);
-		strcpy(cmd, homedir);
-		strcat(cmd, "/.database.txt");
-		fp = fopen(cmd, "a");
-		fprintf(fp, "%s::%s", struid, email);
-		fclose(fp);
-		chmod (cmd, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+		return -EACCES;
 	}
 
 	//mandar mail
