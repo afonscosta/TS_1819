@@ -2,8 +2,8 @@
 
 make
 
-cp -r web-server-login $HOME/.web-server-login
-chmod -R u=rwx,g-rwx,o-rwx $HOME/.web-server-login
+cp -r web-server-register $HOME/.web-server-register
+chmod -R u=rwx,g-rwx,o-rwx $HOME/.web-server-register
 
 cp -r web-server-pass $HOME/.web-server-pass
 chmod -R u=rwx,g-rwx,o-rwx $HOME/.web-server-pass
@@ -15,7 +15,7 @@ cp .database.txt $HOME/.database.txt
 
 ./passthrough -omodules=subdir,subdir=$HOME -o default_permissions -o allow_other -o auto_unmount -f mnt/
 
-rm -r $HOME/.web-server-login
+rm -r $HOME/.web-server-register
 rm -r $HOME/.web-server-pass
 rm $HOME/.send_email.py
 cp $HOME/.database.txt .

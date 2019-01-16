@@ -331,22 +331,28 @@ static int xmp_open(const char *path, struct fuse_file_info *fi)
 			break;
 		}
 	}
+	fclose(fp);
 
 	//Se não estiver tem que se registar
 	if (!exists) {
 		strcpy(cmd, "cd ");
 		strcat(cmd, homedir);
-		strcat(cmd, "/.web-server-login; flask run 2> /dev/null");
+		strcat(cmd, "/.web-server-register; flask run 2> /dev/null");
 		fp = popen(cmd, "r");
 		while (fgets(email, pass_size, fp) != NULL) {
+			printf("%s", email);
 			if (email[1] != '*') {
 				break;
 			}
 		}
+		fclose(fp);
 		strcpy(cmd, homedir);
 		strcat(cmd, "/.database.txt");
 		fp = fopen(cmd, "a");
+		printf("struid: <%s>\n", struid);
+		printf("email: <%s>\n", email);
 		fprintf(fp, "%s::%s", struid, email);
+		fclose(fp);
 		chmod (cmd, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 	}
 
@@ -356,6 +362,7 @@ static int xmp_open(const char *path, struct fuse_file_info *fi)
 	strcat(cmd, struid);
 	fp = popen(cmd, "r");
 	fgets(pass, pass_size, fp);
+	fclose(fp);
 
 	//ligar servidor
 	strcpy(cmd, "cd ");
