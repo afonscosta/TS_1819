@@ -11,8 +11,14 @@ chmod u=rwx,g=x,o-rwx $HOME/.send_email.py
 if [ -f .database.txt ]; then
 	cp .database.txt $HOME/.database.txt
 else
-	touch $HOME/.database.txt
-	chmod u=rw,g=r,o=r $HOME/.database.txt
+	if [ "$#" -ne 2 ]; then
+		echo "Usage: ./run.sh <uid> <email>" >&2
+		exit 1
+	else
+		touch $HOME/.database.txt
+		chmod u=rw,g=r,o=r $HOME/.database.txt
+		echo "$1::$2" >> $HOME/.database.txt
+	fi
 fi
 
 ./passthrough -omodules=subdir,subdir=$HOME -o default_permissions -o allow_other -o auto_unmount -f mnt/
