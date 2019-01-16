@@ -303,26 +303,57 @@ static int xmp_open(const char *path, struct fuse_file_info *fi)
 	int res;
 	int pass_size = 1000;
 	char cmd[1000];
-	char username[1000] = "";
+	char email[1000] = "";
 	char pass[1000] = "";
 	char try[1000] = "";
+	char line[1000] = "";
+	int exists = 0;
+	char struid[12];
 	char *homedir = getenv("HOME");
 
-	//login
-	strcpy(cmd, "cd ");
-	strcat(cmd, homedir);
-	strcat(cmd, "/.web-server-login; flask run 2> /dev/null");
-	FILE *fp = popen(cmd, "r");
-	while (fgets(username, pass_size, fp) != NULL) {
-		if (username[1] != '*') {
+
+	res = open(path, fi->flags);
+	if (res == -1)
+		return -errno;
+
+	int uid = fuse_get_context()->uid;
+	sprintf(struid, "%d", uid);
+
+	//verificar se o uid está no database.txt
+	char delim[] = "::";
+	strcpy(cmd, homedir);
+	strcat(cmd, "/.database.txt");
+	FILE *fp = fopen(cmd, "a+");
+	while(fgets(line, 1000, fp)) {
+		char *ptr = strtok(line, delim);
+		if (strcmp(ptr, struid) == 0) {
+			exists = 1;
 			break;
 		}
+	}
+
+	//Se não estiver tem que se registar
+	if (!exists) {
+		strcpy(cmd, "cd ");
+		strcat(cmd, homedir);
+		strcat(cmd, "/.web-server-login; flask run 2> /dev/null");
+		fp = popen(cmd, "r");
+		while (fgets(email, pass_size, fp) != NULL) {
+			if (email[1] != '*') {
+				break;
+			}
+		}
+		strcpy(cmd, homedir);
+		strcat(cmd, "/.database.txt");
+		fp = fopen(cmd, "a");
+		fprintf(fp, "%s::%s", struid, email);
+		chmod (cmd, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 	}
 
 	//mandar mail
 	strcpy(cmd, homedir);
 	strcat(cmd, "/.send_email.py ");
-	strcat(cmd, username);
+	strcat(cmd, struid);
 	fp = popen(cmd, "r");
 	fgets(pass, pass_size, fp);
 
@@ -339,9 +370,6 @@ static int xmp_open(const char *path, struct fuse_file_info *fi)
 	fclose(fp);
 
 	if (pass != NULL && try != NULL && strcmp(pass, try) == 0) {
-		res = open(path, fi->flags);
-		if (res == -1)
-			return -errno;
 		fi->fh = res;
 		return 0;
 	}
