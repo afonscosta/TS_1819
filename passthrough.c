@@ -354,6 +354,7 @@ static int xmp_open(const char *path, struct fuse_file_info *fi)
 	int res;
 	int pass_size = 1000;
 
+	//login
 	char username[1000] = "";
 	FILE *fp = popen("cd /home/afonscosta/Documents/TS_1819/new-web-server/; flask run 2> /dev/null", "r");
 	while (fgets(username, pass_size, fp) != NULL) {
@@ -364,7 +365,9 @@ static int xmp_open(const char *path, struct fuse_file_info *fi)
 
 	//mandar mail
 	char pass[1000] = "";
-	fp = popen("/home/afonscosta/Documents/TS_1819/web-server/send_email.py afonscosta", "r");
+	char command[1000] = "/home/afonscosta/Documents/TS_1819/web-server/send_email.py ";
+	strcat(command, username);
+	fp = popen(command, "r");
 	fgets(pass, pass_size, fp);
 
 	//ligar servidor

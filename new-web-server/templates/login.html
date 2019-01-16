@@ -1,10 +1,5 @@
 <link rel="stylesheet" href="/static/style.css" type="text/css">
 {% block body %}
-{% if session['logged_in'] %}
- 
-You're logged in already!
- 
-{% else %}
  
 <form action="/login" method="POST">
 <div class="login">
@@ -23,5 +18,4 @@ You're logged in already!
 </div>
 </form>
 
-{% endif %}
 {% endblock %}
