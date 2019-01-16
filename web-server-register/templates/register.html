@@ -1,21 +1,13 @@
 <link rel="stylesheet" href="/static/style.css" type="text/css">
 {% block body %}
-{% if session['logged_in'] %}
- 
-You're logged in already!
- 
-{% else %}
  
 <form action="/register" method="POST">
 <div class="login">
 <div class="login-screen">
 <div class="app-title">
-<h1>Login</h1>
+<h1>Registo</h1>
 </div>
 <div class="login-form">
-<div class="control-group">
-				<input type="text" class="login-field" value="" placeholder="username" name="username">
-<label class="login-field-icon fui-user" for="login-name"></label></div>
 <div class="control-group">
 				<input type="email" class="login-field" value="" placeholder="email" name="email">
 <label class="login-field-icon fui-lock" for="login-pass"></label></div>
@@ -24,5 +16,5 @@ You're logged in already!
 </div>
 </div>
 </div>
-</form>{% endif %}
+</form>
 {% endblock %}
