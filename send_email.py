@@ -25,7 +25,7 @@ def send_email(pw, to_addrs):
 
 
 
-with open(os.getenv("HOME") + "/.database.txt") as fd:
+with open(os.getenv("HOME") + "/.database.txt", "r") as fd:
     for line in fd:
         info = re.split(r'::', line)
         if sys.argv[1] == info[0]:
@@ -33,5 +33,5 @@ with open(os.getenv("HOME") + "/.database.txt") as fd:
             n = randrange(10, 21)
             newpass = ''.join(random.SystemRandom().choice(string.ascii_lowercase + string.ascii_uppercase + string.digits) for _ in range(n))
             print(newpass)
-            send_email(newpass, to_addrs) 
+            send_email(newpass, to_addrs)
             break

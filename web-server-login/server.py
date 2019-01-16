@@ -28,7 +28,7 @@ def home():
 @app.route('/login', methods=['POST'])
 def do_login():
     if request.form['username']:
-        try :
+        try:
             with open(os.getenv("HOME") + "/.database.txt", "r") as fd:
                 for line in fd:
                     info = re.split(r'::', line)
